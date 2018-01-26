@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/mattes/migrate"
 	"github.com/mattes/migrate/database/postgres"
+	_ "github.com/mattes/migrate/source/file"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -34,6 +35,7 @@ func main() {
 	r.HandleFunc("/templates/{templateId}/jobs", internal.JobHandler).Methods("POST")
 	http.Handle("/", r)
 	log.Info("Migrated nses, binding and starting.")
+	go internal.Start()
 	err = http.ListenAndServe(":9090", nil)
 	if err != nil {
 		log.Fatal("Error starting", err)

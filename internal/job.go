@@ -3,35 +3,18 @@ package internal
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
 )
-
-type TimeUnit int
-
-const (
-	Millisecond TimeUnit = iota
-	Second
-	Minute
-	Hour
-	Day
-	Week
-	Month
-	Year
-)
-
-type Interval struct {
-	unit  TimeUnit
-	value int
-}
 
 type Job struct {
-	id          *uuid.UUID
-	runInterval Interval
-	weight      int
-	template    uuid.UUID
-	payload     json.RawMessage
+	Id          *uuid.UUID       `json:"id"`
+	RunInterval *time.Duration   `json:"interval"`
+	template    *uuid.UUID
+	Payload     *json.RawMessage `json:"payload"`
 }
 
 func JobHandler(w http.ResponseWriter, request *http.Request) {
@@ -45,13 +28,14 @@ func JobHandler(w http.ResponseWriter, request *http.Request) {
 	}
 	templateId, err := uuid.FromString(vars["templateId"])
 	if err != nil {
-		http.Error(w, "Invalid template id", 400)
+		http.Error(w, "Invalid UUID", 406)
 		return
 	}
-	job.template = templateId
-	_, err = Db.Query("INSERT INTO jobs(interval,weight,template, payload) VALUES($1,$2,$3,$4)", job.runInterval, job.weight, job.template, job.payload)
+	job.template = &templateId
+	_, err = Db.Query("INSERT INTO jobs(interval,template, payload, next_run_min_date, next_run_max_date) VALUES($1,$2,$3,$4,$5)", job.RunInterval.String(), job.template, job.Payload, time.Now(), time.Now().Add(*job.RunInterval))
 	if err != nil {
 		http.Error(w, "Failed inserting job for template", 500)
+		log.Error("Could not insert job.", err)
 		return
 	}
 	defer request.Body.Close()

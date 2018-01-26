@@ -25,9 +25,9 @@ func (o *JobType) UnmarshalJSON(b []byte) error {
 }
 
 type JobTemplate struct {
-	Id    *string  `json:"id,omitempty"`
-	Type  *JobType `json:"type"`
-	Props json.RawMessage
+	Id    *string         `json:"id,omitempty"`
+	Type  *JobType        `json:"type"`
+	Props json.RawMessage `json:"props"`
 }
 
 type AwsLambdaTemplateProps struct {
