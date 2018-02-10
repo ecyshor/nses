@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/ecyshor/nses/internal"
@@ -16,7 +18,9 @@ import (
 )
 
 func main() {
-	d, err := sql.Open("postgres", "dbname=nses user=nses password=superpassword host=localhost sslmode=disable")
+	d, err := sql.Open("postgres", fmt.Sprintf("dbname=%s user=%s password=%s host=%s sslmode=disable",
+		getEnv("NSES_DB_DB", "nses"), getEnv("NSES_DB_USER", "nses"), getEnv("NSES_DB_PASSWORD", "superpassword"),
+		getEnv("NSES_DB_HOST", "localhost")))
 	handleFailure(err)
 	internal.Db = d
 	driver, err := postgres.WithInstance(d, &postgres.Config{DatabaseName: "nses"})
@@ -77,4 +81,11 @@ func handleFailure(e error) {
 	if e != nil {
 		panic(e)
 	}
+}
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
 }

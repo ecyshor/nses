@@ -25,7 +25,7 @@ type JobResult struct {
 	error error
 	extra []byte
 }
-
+//TODO think about finding way to make it easier to run with multiple instances
 func Start() {
 	ticker := time.NewTicker(30 * time.Second)
 	jobs := make(chan RunnableJob, 100)
@@ -52,6 +52,8 @@ func StartMarker(marking chan JobResult) {
 }
 
 func runJobs(jobber *Jobber) {
+	//TODO stream the jobs from postgresql
+	//TODO ensure jobs are not picked up twice, keep in memory status
 	jobsToRun, err := retrieveForDate(time.Now().Add(2 * time.Hour))
 	log.Infof("Running %d jobs", len(jobsToRun))
 	if err != nil {
