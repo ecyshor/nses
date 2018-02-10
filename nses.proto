@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package main;
+
+service Nses {
+
+    rpc CreateTemplate (JobTemplate) returns (JobTemplate) {
+    }
+    rpc CreateJob (Job) returns (Job) {
+    }
+}
+
+// The response message containing the greetings
+message Job {
+    string id = 1;
+    string message = 2;
+    int32 interval = 3; //interval in seconds
+    bytes payload = 4;
+    string path = 5; // max 50 characters, slash separated path to build jobs tree. must be chose carefully to allow easier jobs manipulations in the future
+}
+
+message JobTemplate {
+    string id = 1;
+    string name = 2;
+    oneof job_properties {
+        AwsLambdaProperties properties = 3;
+    }
+
+    message AwsLambdaProperties {
+        string function = 1; //The arn of the function
+    }
+}
+
+enum JobType {
+    AwsLambda = 0;
+}

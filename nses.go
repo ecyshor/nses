@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
+	"time"
 
 	"github.com/ecyshor/nses/internal"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/gorilla/mux"
 	"github.com/mattes/migrate"
 	"github.com/mattes/migrate/database/postgres"
@@ -32,14 +35,41 @@ func main() {
 	}
 	r := mux.NewRouter()
 	r.HandleFunc("/templates", internal.TemplateHandler).Methods("POST")
-	r.HandleFunc("/templates/{templateId}/jobs", internal.JobHandler).Methods("POST")
+	r.PathPrefix("/templates/{template}/jobs/").Handler(http.HandlerFunc(internal.JobHandler)).Methods("POST")
 	http.Handle("/", r)
 	log.Info("Migrated nses, binding and starting.")
 	go internal.Start()
-	err = http.ListenAndServe(":9090", nil)
-	if err != nil {
-		log.Fatal("Error starting", err)
+	srv := &http.Server{
+		Handler:      r,
+		Addr:         ":9090",
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
 	}
+	log.Fatal(srv.ListenAndServe())
+}
+
+// GRPC SERVER
+type GrpcNsesServer struct {
+}
+
+var marshaller = &jsonpb.Marshaler{EnumsAsInts: true}
+
+func (s *GrpcNsesServer) CreateTemplate(ctx context.Context, template *JobTemplate) (*JobTemplate, error) {
+	value, e := marshaller.MarshalToString(template.GetProperties())
+	if e != nil {
+		return nil, e
+	}
+	jobTemplate, err := internal.CreateTemplate(&internal.JobTemplate{Type: internal.AwsLambda, Props: []byte(value)})
+	if err != nil {
+		log.Error("could not create template", err)
+		return nil, err
+	}
+	template.Id = jobTemplate.Id.String()
+	return template, nil
+}
+
+func (s *GrpcNsesServer) CreateJob(context.Context, *Job) (*Job, error) {
+	return nil, nil
 }
 
 func handleFailure(e error) {

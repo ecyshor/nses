@@ -1,10 +1,12 @@
 CREATE EXTENSION "uuid-ossp";
+CREATE extension "ltree";
 
 CREATE TABLE job_templates (
   id         UUID      DEFAULT uuid_generate_v4() PRIMARY KEY,
   created    TIMESTAMP DEFAULT current_timestamp,
   modified   TIMESTAMP DEFAULT current_timestamp,
-  job_type   VARCHAR(256) NOT NULL,
+  job_type   VARCHAR(256)       NOT NULL,
+  name       VARCHAR(50) UNIQUE NOT NULL,
   properties JSONB
 );
 
@@ -35,8 +37,11 @@ CREATE TABLE jobs (
   modified          TIMESTAMP DEFAULT current_timestamp,
   payload           JSONB,
   next_run_min_date TIMESTAMP,
-  next_run_max_date TIMESTAMP
+  next_run_max_date TIMESTAMP,
+  path              ltree
 );
+CREATE INDEX path_idx
+  ON jobs USING BTREE (path);
 
 CREATE TRIGGER update_modified_job
   BEFORE UPDATE

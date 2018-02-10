@@ -91,7 +91,7 @@ type GenericErrorMessage struct {
 }
 
 func (j RunnableJob) Run() JobResult {
-	switch *j.template.Type {
+	switch j.template.Type {
 	case AwsLambda:
 		{
 			// Create Lambda service client
@@ -126,8 +126,10 @@ func (r *JobResult) MarkRun() {
 	j := r.job
 	log.Info("Marking job run.")
 	rows, err := Db.Query("SELECT run_date FROM job_runs WHERE job_id = $1 ORDER BY run_date DESC LIMIT 5", j.Id)
+	defer rows.Close()
 	if err != nil {
 		log.Error("Could not retrieve last run dates", err)
+		panic(err)
 	}
 	lastRunDates := make([]time.Time, 5, 5)
 	for rows.Next() {
@@ -147,14 +149,19 @@ func (r *JobResult) MarkRun() {
 		nextMin = jobRunDate.Add(time.Duration(int64(float64(0.9) * float64(j.RunInterval.Nanoseconds()))))
 		nextMax = jobRunDate.Add(time.Duration(int64(float64(1.1) * float64(j.RunInterval.Nanoseconds()))))
 	}
-	log.Infof("Interval of %s for duration %s", nextMax.Sub(nextMin), j.RunInterval)
 	log.Infof("Calculated next times: min [%s], max [%s]", nextMin.String(), nextMax.String())
-	_, err = Db.Query("UPDATE jobs SET next_run_max_date = $1, next_run_min_date = $2 WHERE id = $3", nextMax, nextMin, j.Id)
+	_, err = Db.Exec("UPDATE jobs SET next_run_max_date = $1, next_run_min_date = $2 WHERE id = $3", nextMax, nextMin, j.Id)
 	if err != nil {
 		log.Error("Error updating jobs dates", err)
 	}
-	_, err = Db.Query("INSERT INTO job_runs(job_id, run_date,successfull, extra_details) VALUES ($1,$2, $3, $4)", j.Id,
-		jobRunDate, r.error != nil, r.extra)
+	var succesfull int
+	if r.error != nil {
+		succesfull = 0
+	} else {
+		succesfull = 1
+	}
+	_, err = Db.Exec("INSERT INTO job_runs(job_id, run_date,successfull, extra_details) VALUES ($1,$2, $3, $4)", j.Id,
+		jobRunDate, succesfull, r.extra)
 	if err != nil {
 		log.Error("Error inserting job run", err)
 	}
@@ -163,7 +170,7 @@ func (r *JobResult) MarkRun() {
 }
 
 func retrieveForDate(toDate time.Time) ([]Job, error) {
-	rows, err := Db.Query("SELECT id, template ,payload, INTERVAL  FROM jobs WHERE next_run_min_date >= $1 AND next_run_max_date <= $1", time.Now(), toDate)
+	rows, err := Db.Query("SELECT id, template ,payload, INTERVAL  FROM jobs WHERE (next_run_min_date >= $1 AND next_run_max_date <= $2) OR next_run_max_date <= $1", time.Now(), toDate)
 	defer rows.Close()
 	if err != nil {
 		log.Error("Could not retrieve mandatory jobs to run", err)

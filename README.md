@@ -14,3 +14,8 @@ Light scheduler to emite events, trigger http calls, trigger external services o
 ### Accepted types
 
 ## Jobs
+
+
+##Setup dev env
+
+`protoc --go_out=. *.proto`
