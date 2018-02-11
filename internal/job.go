@@ -12,8 +12,8 @@ import (
 )
 
 type Job struct {
-	Id          *uuid.UUID       `json:"id"`
-	RunInterval *time.Duration   `json:"interval"`
+	Id          *uuid.UUID     `json:"id"`
+	RunInterval *time.Duration `json:"interval"`
 	template    *uuid.UUID
 	Payload     *json.RawMessage `json:"payload"`
 	Path        string           `json:"path"`

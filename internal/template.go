@@ -20,7 +20,7 @@ const (
 type ErrorType int
 
 const (
-	Internal   ErrorType = iota
+	Internal ErrorType = iota
 	Validation
 )
 

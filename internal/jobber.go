@@ -25,6 +25,7 @@ type JobResult struct {
 	error error
 	extra []byte
 }
+
 //TODO think about finding way to make it easier to run with multiple instances
 func Start() {
 	ticker := time.NewTicker(30 * time.Second)
@@ -71,7 +72,7 @@ func runJobs(jobber *Jobber) {
 }
 
 func NewRunner(jobs chan RunnableJob) *Jobber {
-	return &Jobber{jobs,}
+	return &Jobber{jobs}
 }
 
 func (j Jobber) Start(marking chan JobResult) {
