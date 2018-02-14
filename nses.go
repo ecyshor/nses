@@ -38,7 +38,7 @@ func main() {
 		log.Fatal("Could not run migrations ", err)
 	}
 	r := mux.NewRouter()
-	r.HandleFunc("/templates", internal.TemplateHandler).Methods("POST")
+	r.HandleFunc("/templates", internal.TemplateHandler).Methods("PUT")
 	r.PathPrefix("/templates/{template}/jobs/").Handler(http.HandlerFunc(internal.JobHandler)).Methods("POST")
 	http.Handle("/", r)
 	log.Info("Migrated nses, binding and starting.")

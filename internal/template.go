@@ -97,7 +97,7 @@ func CreateTemplate(jobTemplate *JobTemplate) (*JobTemplate, error) {
 	if err := validate(jobTemplate); err != nil {
 		return nil, &NsesError{errorType: Validation, error: err}
 	}
-	res, err := Db.Query("INSERT INTO job_templates(job_type, name,properties) VALUES($1,$2, $3) RETURNING id", jobTemplate.Type, jobTemplate.Name, jobTemplate.Props)
+	res, err := Db.Query("INSERT INTO job_templates(job_type, name,properties) VALUES($1,$2, $3) ON CONFLICT(name) DO UPDATE SET job_type=$1, properties=$3 RETURNING id", jobTemplate.Type, jobTemplate.Name, jobTemplate.Props)
 	defer res.Close()
 	if err != nil {
 		return nil, &NsesError{errorType: Internal, error: err}
