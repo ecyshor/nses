@@ -15,12 +15,13 @@ type JobType string
 
 const (
 	AwsLambda JobType = "awsLambda"
+	Http              = "http"
 )
 
 type ErrorType int
 
 const (
-	Internal ErrorType = iota
+	Internal   ErrorType = iota
 	Validation
 )
 
@@ -90,6 +91,7 @@ func TemplateHandler(w http.ResponseWriter, request *http.Request) {
 		log.Error("could not serialize template", err)
 		http.Error(w, err.Error(), 500)
 	}
+	w.WriteHeader(http.StatusCreated)
 	w.Write(templateBytes)
 }
 
