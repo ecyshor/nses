@@ -18,18 +18,19 @@ import (
 )
 
 func main() {
+	nsesDb := getEnv("NSES_DB_DB", "nses")
 	d, err := sql.Open("postgres", fmt.Sprintf("dbname=%s user=%s password=%s host=%s sslmode=disable",
-		getEnv("NSES_DB_DB", "nses"), getEnv("NSES_DB_USER", "nses"), getEnv("NSES_DB_PASSWORD", "superpassword"),
+		nsesDb, getEnv("NSES_DB_USER", "nses"), getEnv("NSES_DB_PASSWORD", "superpassword"),
 		getEnv("NSES_DB_HOST", "localhost")))
 	handleFailure(err)
 	internal.Db = d
-	driver, err := postgres.WithInstance(d, &postgres.Config{DatabaseName: "nses"})
+	driver, err := postgres.WithInstance(d, &postgres.Config{DatabaseName: nsesDb})
 	if err != nil {
-		log.Fatal("Could not create driver instance", err)
+		log.Panic("Could not create driver instance", err)
 	}
 	m, err := migrate.NewWithDatabaseInstance(
 		"file://migrations",
-		"nses", driver)
+		nsesDb, driver)
 	if err != nil {
 		log.Fatal("Could not initialize migrations", err)
 	}

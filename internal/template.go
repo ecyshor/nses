@@ -32,7 +32,11 @@ type NsesError struct {
 }
 
 func (e *NsesError) Error() string {
+	if e.error != nil {
+		return e.error.Error()
+	} else {
 	return fmt.Sprint(e.message)
+	}
 }
 func (o *JobType) UnmarshalJSON(b []byte) error {
 	str := strings.Trim(string(b), `"`)
@@ -53,7 +57,7 @@ type JobTemplate struct {
 }
 
 type AwsLambdaTemplateProps struct {
-	FunctionName *string `json:"name"`
+	FunctionName *string `json:"arn"`
 }
 
 func TemplateHandler(w http.ResponseWriter, request *http.Request) {
