@@ -15,7 +15,7 @@ type JobType string
 
 const (
 	AwsLambda JobType = "awsLambda"
-	Http              = "http"
+	Http      JobType = "http"
 )
 
 type ErrorType int
@@ -35,7 +35,7 @@ func (e *NsesError) Error() string {
 	if e.error != nil {
 		return e.error.Error()
 	} else {
-	return fmt.Sprint(e.message)
+		return fmt.Sprint(e.message)
 	}
 }
 func (o *JobType) UnmarshalJSON(b []byte) error {
@@ -43,6 +43,8 @@ func (o *JobType) UnmarshalJSON(b []byte) error {
 	switch str {
 	case "awsLambda":
 		*o = AwsLambda
+	case "http":
+		*o = Http
 	default:
 		return fmt.Errorf("could not deserialize %s", str)
 	}
@@ -58,6 +60,11 @@ type JobTemplate struct {
 
 type AwsLambdaTemplateProps struct {
 	FunctionName *string `json:"arn"`
+}
+
+type HttpTemplateProps struct {
+	url       *string
+	method    *string
 }
 
 func TemplateHandler(w http.ResponseWriter, request *http.Request) {
@@ -120,7 +127,12 @@ func validate(template *JobTemplate) error {
 		json.Unmarshal(template.Props, &props)
 		if props.FunctionName == nil {
 			return errors.New("lambda ARN is required")
-
+		}
+	case Http:
+		var props HttpTemplateProps
+		json.Unmarshal(template.Props, &props)
+		if props.url == nil {
+			return errors.New("http URL is required")
 		}
 	default:
 		return errors.New("invalid template type")

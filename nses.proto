@@ -23,14 +23,16 @@ message JobTemplate {
     string id = 1;
     string name = 2;
     oneof job_properties {
-        AwsLambdaProperties properties = 3;
+        AwsLambdaProperties lambda_properties = 3;
+        HttpProperties http_properties = 4;
     }
 
     message AwsLambdaProperties {
         string function = 1; //The arn of the function
     }
-}
 
-enum JobType {
-    AwsLambda = 0;
+    message HttpProperties {
+        string url = 1;
+        string method = 2;
+    }
 }

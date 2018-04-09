@@ -10,6 +10,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/lambda"
 	log "github.com/sirupsen/logrus"
+	"net/http"
+	"strings"
+	"io/ioutil"
 )
 
 var Db *sql.DB
@@ -120,6 +123,28 @@ func (j RunnableJob) Run() JobResult {
 				}
 				return JobResult{j.job, err, bytes}
 			}
+		}
+	case Http:
+		{
+			var props HttpTemplateProps
+			var jobVariables map[string]string
+			json.Unmarshal(j.template.Props, &props)
+			json.Unmarshal(*j.job.Payload, &jobVariables)
+			var url = *props.url
+			for key := range jobVariables {
+				url = strings.Replace(jobVariables[key], ":"+key, jobVariables[key], -1)
+			}
+			resp, err := http.NewRequest(*props.method, url, nil)
+			if err != nil {
+				log.Error("Could not serialize output to json for http integration", err)
+				return JobResult{j.job, err, nil}
+			}
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Error("Could not read responde body", err)
+			}
+			defer resp.Body.Close()
+			return JobResult{j.job, err, body}
 		}
 	}
 	return JobResult{j.job, nil, make([]byte, 0)}

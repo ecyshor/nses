@@ -15,6 +15,7 @@ import (
 	"github.com/mattes/migrate/database/postgres"
 	_ "github.com/mattes/migrate/source/file"
 	log "github.com/sirupsen/logrus"
+	"github.com/golang/protobuf/proto"
 )
 
 func main() {
@@ -60,11 +61,22 @@ type GrpcNsesServer struct {
 var marshaller = &jsonpb.Marshaler{EnumsAsInts: true}
 
 func (s *GrpcNsesServer) CreateTemplate(ctx context.Context, template *JobTemplate) (*JobTemplate, error) {
-	value, e := marshaller.MarshalToString(template.GetProperties())
+	var message proto.Message
+	var jobType internal.JobType
+
+	if template.GetLambdaProperties() != nil {
+		message = template.GetLambdaProperties()
+		jobType = internal.AwsLambda
+	}
+	if template.GetLambdaProperties() != nil {
+		message = template.GetHttpProperties()
+		jobType = internal.Http
+	}
+	value, e := marshaller.MarshalToString(message)
 	if e != nil {
 		return nil, e
 	}
-	jobTemplate, err := internal.CreateTemplate(&internal.JobTemplate{Type: internal.AwsLambda, Props: []byte(value)})
+	jobTemplate, err := internal.CreateTemplate(&internal.JobTemplate{Type: jobType, Props: []byte(value)})
 	if err != nil {
 		log.Error("could not create template", err)
 		return nil, err
