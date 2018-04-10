@@ -41,13 +41,13 @@ func main() {
 	}
 	r := mux.NewRouter()
 	r.HandleFunc("/templates", internal.TemplateHandler).Methods("PUT")
-	r.PathPrefix("/templates/{template}/jobs/").Handler(http.HandlerFunc(internal.JobHandler)).Methods("POST")
+	r.PathPrefix("/templates/{template}/jobs").Handler(http.HandlerFunc(internal.JobHandler)).Methods("POST")
 	http.Handle("/", r)
 	log.Info("Migrated nses, binding and starting.")
 	go internal.Start()
 	srv := &http.Server{
 		Handler:      r,
-		Addr:         ":9090",
+		Addr:         ":9999",
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}

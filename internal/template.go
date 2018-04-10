@@ -63,8 +63,8 @@ type AwsLambdaTemplateProps struct {
 }
 
 type HttpTemplateProps struct {
-	url       *string
-	method    *string
+	Url    *string `json:"url"`
+	Method *string `json:"method"`
 }
 
 func TemplateHandler(w http.ResponseWriter, request *http.Request) {
@@ -131,7 +131,7 @@ func validate(template *JobTemplate) error {
 	case Http:
 		var props HttpTemplateProps
 		json.Unmarshal(template.Props, &props)
-		if props.url == nil {
+		if props.Url == nil {
 			return errors.New("http URL is required")
 		}
 	default:

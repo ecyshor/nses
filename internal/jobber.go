@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"strings"
 	"io/ioutil"
+	"fmt"
 )
 
 var Db *sql.DB
@@ -130,21 +131,38 @@ func (j RunnableJob) Run() JobResult {
 			var jobVariables map[string]string
 			json.Unmarshal(j.template.Props, &props)
 			json.Unmarshal(*j.job.Payload, &jobVariables)
-			var url = *props.url
+			var url string
 			for key := range jobVariables {
-				url = strings.Replace(jobVariables[key], ":"+key, jobVariables[key], -1)
+				url = strings.Replace(*props.Url, ":"+key, jobVariables[key], -1)
 			}
-			resp, err := http.NewRequest(*props.method, url, nil)
+			request, err := http.NewRequest(*props.Method, url, nil)
 			if err != nil {
-				log.Error("Could not serialize output to json for http integration", err)
+				log.Error("Could not create request", err)
 				return JobResult{j.job, err, nil}
 			}
-			body, err := ioutil.ReadAll(resp.Body)
+			resp, err := http.DefaultClient.Do(request)
 			if err != nil {
-				log.Error("Could not read responde body", err)
+				log.Error("Failed request", err)
+				return JobResult{j.job, err, nil}
 			}
 			defer resp.Body.Close()
-			return JobResult{j.job, err, body}
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Error("Could not read response body", err)
+			}
+			if resp.StatusCode >= 400 {
+				err = fmt.Errorf("failed with status %d", resp.StatusCode)
+			}
+			extraData := map[string]interface{}{
+				"body":   string(body[:]),
+				"status": resp.StatusCode,
+			}
+			jsonExtra, err := json.Marshal(extraData)
+			if err != nil {
+				log.Error("could not serialize extra data", err)
+				err = fmt.Errorf("failed to serialize extra data")
+			}
+			return JobResult{j.job, err, jsonExtra}
 		}
 	}
 	return JobResult{j.job, nil, make([]byte, 0)}
@@ -191,7 +209,7 @@ func (r *JobResult) MarkRun() {
 	_, err = Db.Exec("INSERT INTO job_runs(job_id, run_date,successfull, extra_details) VALUES ($1,$2, $3, $4)", j.Id,
 		jobRunDate, succesfull, r.extra)
 	if err != nil {
-		log.Error("Error inserting job run", err)
+		log.Error("Error inserting job run", err, r)
 	}
 	log.Info("Marked job run.")
 
