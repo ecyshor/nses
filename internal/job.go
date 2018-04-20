@@ -44,7 +44,12 @@ func JobHandler(w http.ResponseWriter, request *http.Request) {
 	}
 	defer request.Body.Close()
 	job.template = &templateId
-	job.Path = strings.Replace(strings.SplitN(request.URL.Path, "/", 5)[4], "/", ".", -1)
+	requestPaths := strings.SplitN(request.URL.Path, "/", 5)
+	if len(requestPaths) < 5 {
+		http.Error(w, "No job identifier provided. please include it in the path after the template.", 400)
+		return
+	}
+	job.Path = strings.Replace(requestPaths[4], "/", ".", -1)
 	_, err = Db.Exec("INSERT INTO jobs(interval, template, payload, next_run_min_date, next_run_max_date, path) VALUES($1,$2,$3,$4,$5,$6)",
 		job.RunInterval.String(), job.template, job.Payload, time.Now(), time.Now().Add(*job.RunInterval), job.Path)
 	if err != nil {
