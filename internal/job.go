@@ -9,11 +9,12 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+	"regexp"
 )
 
 type Job struct {
-	Id          *uuid.UUID     `json:"id"`
-	RunInterval *time.Duration `json:"interval"`
+	Id          *uuid.UUID       `json:"id"`
+	RunInterval *time.Duration   `json:"interval"`
 	template    *uuid.UUID
 	Payload     *json.RawMessage `json:"payload"`
 	Path        string           `json:"path"`
@@ -50,6 +51,12 @@ func JobHandler(w http.ResponseWriter, request *http.Request) {
 		return
 	}
 	job.Path = strings.Replace(requestPaths[4], "/", ".", -1)
+	if matches, err := regexp.MatchString("^[a-zA-Z0-9_]+(\\.[a-zA-Z0-9_]+)*$", job.Path); err != nil || !matches {
+		http.Error(w, "The provided job path is not valid. Please include in the paths just [a-zA-Z0-9_] characters ", 400)
+		log.Infof("Invalid job path %s", job.Path, err)
+		return
+	}
+	log.Debug("Creating job ", job)
 	_, err = Db.Exec("INSERT INTO jobs(interval, template, payload, next_run_min_date, next_run_max_date, path) VALUES($1,$2,$3,$4,$5,$6)",
 		job.RunInterval.String(), job.template, job.Payload, time.Now(), time.Now().Add(*job.RunInterval), job.Path)
 	if err != nil {

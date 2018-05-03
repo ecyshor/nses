@@ -19,6 +19,9 @@ import (
 )
 
 func main() {
+	log.SetLevel(log.DebugLevel)
+	/*if status, err := strconv.ParseBool(getEnv("DEBUG", "false")); err != nil && status {
+	}*/
 	nsesDb := getEnv("NSES_DB_DB", "nses")
 	d, err := sql.Open("postgres", fmt.Sprintf("dbname=%s user=%s password=%s host=%s sslmode=disable",
 		nsesDb, getEnv("NSES_DB_USER", "nses"), getEnv("NSES_DB_PASSWORD", "superpassword"),

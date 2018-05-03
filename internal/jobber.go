@@ -131,14 +131,19 @@ func (j RunnableJob) Run() JobResult {
 			var jobVariables map[string]string
 			json.Unmarshal(j.template.Props, &props)
 			json.Unmarshal(*j.job.Payload, &jobVariables)
-			var url string
+			var url = *props.Url
 			for key := range jobVariables {
-				url = strings.Replace(*props.Url, ":"+key, jobVariables[key], -1)
+				url = strings.Replace(url, ":"+key, jobVariables[key], -1)
 			}
 			request, err := http.NewRequest(*props.Method, url, nil)
 			if err != nil {
 				log.Error("Could not create request", err)
-				return JobResult{j.job, err, nil}
+				message, err := json.Marshal(err)
+				if err != nil {
+					log.Error("Cannot marshall err", err)
+					message = []byte(`{}`)
+				}
+				return JobResult{j.job, err, message}
 			}
 			resp, err := http.DefaultClient.Do(request)
 			if err != nil {
@@ -149,6 +154,7 @@ func (j RunnableJob) Run() JobResult {
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				log.Error("Could not read response body", err)
+				return JobResult{j.job, err, nil}
 			}
 			if resp.StatusCode >= 400 {
 				err = fmt.Errorf("failed with status %d", resp.StatusCode)
