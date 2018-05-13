@@ -19,5 +19,5 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 COPY --from=build /go/src/github.com/ecyshor/nses/nses .
 COPY migrations migrations
-EXPOSE 9090
+EXPOSE 8000
 CMD ["/root/nses"]

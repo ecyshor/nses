@@ -53,7 +53,7 @@ func main() {
 	go internal.Start()
 	srv := &http.Server{
 		Handler:      r,
-		Addr:         ":9999",
+		Addr:         ":8000",
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
