@@ -43,6 +43,9 @@ func main() {
 		log.Fatal("Could not run migrations ", err)
 	}
 	r := mux.NewRouter()
+	r.HandleFunc("/health", func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusOK)
+	})
 	r.HandleFunc("/templates", internal.TemplateHandler).Methods("PUT")
 	r.PathPrefix("/templates/{template}/jobs").Handler(http.HandlerFunc(internal.JobHandler)).Methods("POST")
 	http.Handle("/", r)
